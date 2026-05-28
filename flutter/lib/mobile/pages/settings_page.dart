@@ -1090,12 +1090,12 @@ void showAbout(OverlayDialogManager dialogManager) {
         Text('Version: $version'),
         InkWell(
             onTap: () async {
-              const url = 'https://rustdesk.com/';
+              const url = 'https://github.com/Matheus-Matta/stardesk';
               await launchUrl(Uri.parse(url));
             },
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text('rustdesk.com',
+              child: Text('github.com/Matheus-Matta/stardesk',
                   style: TextStyle(
                     decoration: TextDecoration.underline,
                   )),

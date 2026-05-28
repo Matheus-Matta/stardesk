@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "Purslane Ltd" "\0"
-            VALUE "FileDescription", "RustDesk Remote Desktop" "\0"
+            VALUE "CompanyName", "Stardesk" "\0"
+            VALUE "FileDescription", "Stardesk Remote Desktop" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "rustdesk" "\0"
-            VALUE "LegalCopyright", "Copyright © 2025 Purslane Ltd. All rights reserved." "\0"
-            VALUE "OriginalFilename", "rustdesk.exe" "\0"
-            VALUE "ProductName", "RustDesk" "\0"
+            VALUE "InternalName", "stardesk" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Stardesk maintainers. Based on RustDesk." "\0"
+            VALUE "OriginalFilename", "stardesk.exe" "\0"
+            VALUE "ProductName", "Stardesk" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

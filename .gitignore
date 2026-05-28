@@ -4,6 +4,7 @@
 .idea
 .DS_Store
 .env
+.env.server
 libsciter-gtk.so
 src/ui/inline.rs
 extractor
@@ -15,6 +16,9 @@ src/version.rs
 cert.pfx
 *.bak
 *png
+!flutter/assets/logo.png
+!flutter/assets/logo_dark.png
+!flutter/assets/icon.png
 *svg
 *jpg
 sciter.dll
@@ -49,6 +53,7 @@ lib/generated_bridge.dart
 .vscode-server/
 .ssh
 .devcontainer/.*
+.codex-logs/
 # build cache in examples
 examples/**/target/
 # ===
@@ -56,3 +61,5 @@ vcpkg_installed
 flutter/lib/generated_plugin_registrant.dart
 libsciter.dylib
 flutter/web/
+!flutter/web/
+!flutter/web/**

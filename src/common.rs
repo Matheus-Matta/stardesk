@@ -59,6 +59,9 @@ pub const PLATFORM_WINDOWS: &str = "Windows";
 pub const PLATFORM_LINUX: &str = "Linux";
 pub const PLATFORM_MACOS: &str = "Mac OS";
 pub const PLATFORM_ANDROID: &str = "Android";
+pub const STARDESK_APP_NAME: &str = "Stardesk";
+#[cfg(target_os = "macos")]
+pub const STARDESK_ORG: &str = "com.stardesk";
 
 pub const TIMER_OUT: Duration = Duration::from_secs(1);
 pub const DEFAULT_KEEP_ALIVE: i32 = 60_000;
@@ -122,6 +125,11 @@ impl Drop for SimpleCallOnReturn {
 }
 
 pub fn global_init() -> bool {
+    *config::APP_NAME.write().unwrap() = STARDESK_APP_NAME.to_owned();
+    #[cfg(target_os = "macos")]
+    {
+        *config::ORG.write().unwrap() = STARDESK_ORG.to_owned();
+    }
     #[cfg(target_os = "linux")]
     {
         if !crate::platform::linux::is_x11() {

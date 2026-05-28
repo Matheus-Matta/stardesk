@@ -1054,7 +1054,7 @@ class RustdeskImpl {
   }
 
   Future<void> mainLoadLanPeers({dynamic hint}) {
-    throw UnimplementedError("mainLoadLanPeers");
+    return Future(() => js.context.callMethod('getByName', ['load_lan_peers']));
   }
 
   Future<void> mainRemoveDiscovered({required String id, dynamic hint}) {

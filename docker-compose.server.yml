@@ -1,0 +1,18 @@
+services:
+  hbbs:
+    image: ${STARDESK_SERVER_IMAGE:-ghcr.io/matheus-matta/stardesk-server:latest}
+    container_name: stardesk-hbbs
+    command: "hbbs -r ${STARDESK_SERVER_HOST:?set STARDESK_SERVER_HOST in .env.server}:21117"
+    volumes:
+      - ./server-data:/root
+    network_mode: host
+    restart: unless-stopped
+
+  hbbr:
+    image: ${STARDESK_SERVER_IMAGE:-ghcr.io/matheus-matta/stardesk-server:latest}
+    container_name: stardesk-hbbr
+    command: hbbr
+    volumes:
+      - ./server-data:/root
+    network_mode: host
+    restart: unless-stopped

@@ -1,0 +1,6 @@
+FROM rustdesk/rustdesk-server:latest
+
+LABEL org.opencontainers.image.title="Stardesk Server"
+LABEL org.opencontainers.image.description="Stardesk rendezvous/relay server wrapper based on rustdesk-server"
+LABEL org.opencontainers.image.source="https://github.com/Matheus-Matta/stardesk"
+

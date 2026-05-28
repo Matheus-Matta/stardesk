@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Stardesk web test client.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Stardesk">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Stardesk</title>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <script>
+    (() => {
+      const store = {
+        "app-name": "Stardesk",
+        "version": "dev-web",
+        "local_os": "Windows",
+        "screen_info": "",
+        "my_id": "123456789",
+        "uuid": "stardesk-web-dev",
+        "langs": "[]",
+        "options": "{}",
+        "fav": "[]",
+        "load_recent_peers": "[{\"id\":\"987654321\",\"username\":\"Cliente\",\"hostname\":\"pc-cliente\",\"platform\":\"Windows\",\"alias\":\"Cliente teste\",\"tags\":[],\"note\":\"Registro mock para testar a UI web\"}]",
+        "load_recent_peers_sync": "[{\"id\":\"987654321\",\"username\":\"Cliente\",\"hostname\":\"pc-cliente\",\"platform\":\"Windows\",\"alias\":\"Cliente teste\",\"tags\":[],\"note\":\"Registro mock para testar a UI web\"}]",
+        "load_fav_peers": "[]",
+        "load_lan_peers": "[{\"id\":\"192168001010\",\"username\":\"Suporte\",\"hostname\":\"stardesk-lan\",\"platform\":\"Windows\",\"alias\":\"LAN teste\",\"tags\":[]}]",
+        "load_address_book_peers": "[]",
+        "load_group_peers": "[]",
+        "platform": "Web",
+        "get_conn_status": "{\"status_num\":0}",
+        "is_using_public_server": "N",
+        "api_server": "",
+        "build_date": "",
+        "enable_trusted_devices": "N"
+      };
+
+      window.isMobile = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      window.getByName = (name, arg = "") => {
+        if (["load_recent_peers", "load_fav_peers", "load_lan_peers", "load_address_book_peers", "load_group_peers"].includes(name)) {
+          setTimeout(() => {
+            if (typeof window.onRegisteredEvent === "function") {
+              window.onRegisteredEvent(JSON.stringify({
+                name,
+                peers: store[name] ?? "[]",
+                ids: ""
+              }));
+            }
+          }, 0);
+        }
+        if (name && name.startsWith("option:toggle")) return "false";
+        if (name && name.startsWith("option:")) return "";
+        if (name === "envvar") return "";
+        if (name === "peer_exists" || name === "peer_has_password") return "false";
+        if (name === "get_version_number") return "0";
+        return store[name] ?? "";
+      };
+      window.setByName = (name, value = "") => {
+        if (name === "query_onlines") {
+          setTimeout(() => {
+            if (typeof window.onRegisteredEvent === "function") {
+              const ids = JSON.parse(value || "[]");
+              window.onRegisteredEvent(JSON.stringify({
+                name: "callback_query_onlines",
+                onlines: ids.join(","),
+                offlines: ""
+              }));
+            }
+          }, 0);
+        }
+        store[name] = value;
+        return "";
+      };
+      window.init = () => {
+        setTimeout(() => {
+          if (typeof window.onInitFinished === "function") {
+            window.onInitFinished();
+          }
+        }, 0);
+      };
+    })();
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

@@ -251,16 +251,16 @@ class MyTheme {
   MyTheme._();
 
   static const Color grayBg = Color(0xFFEFEFF2);
-  static const Color accent = Color(0xFF0071FF);
-  static const Color accent50 = Color(0x770071FF);
-  static const Color accent80 = Color(0xAA0071FF);
+  static const Color accent = Color(0xFF0058BB);
+  static const Color accent50 = Color(0x770058BB);
+  static const Color accent80 = Color(0xAA0058BB);
   static const Color canvasColor = Color(0xFF212121);
   static const Color border = Color(0xFFCCCCCC);
   static const Color idColor = Color(0xFF00B6F0);
   static const Color darkGray = Color.fromARGB(255, 148, 148, 148);
   static const Color cmIdColor = Color(0xFF21790B);
   static const Color dark = Colors.black87;
-  static const Color button = Color(0xFF2C8CFF);
+  static const Color button = Color(0xFF0058BB);
   static const Color hoverBorder = Color(0xFF999999);
 
   // ListTile
@@ -381,7 +381,7 @@ class MyTheme {
     appBarTheme: AppBarTheme(
       shadowColor: Colors.transparent,
     ),
-    dialogTheme: DialogTheme(
+    dialogTheme: DialogThemeData(
       elevation: 15,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18.0),
@@ -412,7 +412,7 @@ class MyTheme {
     cardColor: grayBg,
     hintColor: Color(0xFFAAAAAA),
     visualDensity: VisualDensity.adaptivePlatformDensity,
-    tabBarTheme: const TabBarTheme(
+    tabBarTheme: const TabBarThemeData(
       labelColor: Colors.black87,
     ),
     tooltipTheme: tooltipTheme(),
@@ -479,7 +479,7 @@ class MyTheme {
     appBarTheme: AppBarTheme(
       shadowColor: Colors.transparent,
     ),
-    dialogTheme: DialogTheme(
+    dialogTheme: DialogThemeData(
       elevation: 15,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18.0),
@@ -513,7 +513,7 @@ class MyTheme {
     ),
     cardColor: Color(0xFF24252B),
     visualDensity: VisualDensity.adaptivePlatformDensity,
-    tabBarTheme: const TabBarTheme(
+    tabBarTheme: const TabBarThemeData(
       labelColor: Colors.white70,
     ),
     tooltipTheme: tooltipTheme(),
@@ -3713,26 +3713,32 @@ Widget loadPowered(BuildContext context) {
   ).marginOnly(top: 6);
 }
 
-// max 300 x 60
-Widget loadLogo() {
-  return FutureBuilder<ByteData>(
-      future: rootBundle.load('assets/logo.png'),
-      builder: (BuildContext context, AsyncSnapshot<ByteData> snapshot) {
-        if (snapshot.hasData) {
-          final image = Image.asset(
-            'assets/logo.png',
-            fit: BoxFit.contain,
-            errorBuilder: (ctx, error, stackTrace) {
-              return Container();
-            },
-          );
-          return Container(
-            constraints: BoxConstraints(maxWidth: 300, maxHeight: 60),
-            child: image,
-          ).marginOnly(left: 12, right: 12, top: 12);
-        }
-        return const Offstage();
-      });
+// Fits both horizontal and square brand assets.
+Widget loadLogo({double maxWidth = 170, double maxHeight = 120}) {
+  return Builder(builder: (context) {
+    final logoAsset = Theme.of(context).brightness == Brightness.dark
+        ? 'assets/logo_dark.png'
+        : 'assets/logo.png';
+    return FutureBuilder<ByteData>(
+        future: rootBundle.load(logoAsset),
+        builder: (BuildContext context, AsyncSnapshot<ByteData> snapshot) {
+          if (snapshot.hasData) {
+            final image = Image.asset(
+              logoAsset,
+              fit: BoxFit.contain,
+              errorBuilder: (ctx, error, stackTrace) {
+                return Container();
+              },
+            );
+            return Container(
+              constraints:
+                  BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
+              child: image,
+            ).marginOnly(left: 12, right: 12, top: 12);
+          }
+          return const Offstage();
+        });
+  });
 }
 
 Widget loadIcon(double size) {
