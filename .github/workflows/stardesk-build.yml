@@ -1,0 +1,238 @@
+name: Stardesk build
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_windows:
+        description: Build Windows executable artifact
+        required: true
+        type: boolean
+        default: true
+      build_web:
+        description: Build Flutter web artifact
+        required: true
+        type: boolean
+        default: true
+      push_server_image:
+        description: Build and push server image to GHCR
+        required: true
+        type: boolean
+        default: true
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  FLUTTER_VERSION: "3.38.9"
+  FRB_CODEGEN_VERSION: "1.80.1"
+  LLVM_VERSION: "16.0.6"
+  VCPKG_COMMIT_ID: "120deac3062162151622ca4860575a33844ba10b"
+  VCPKG_DEFAULT_TRIPLET: "x64-windows-static"
+  RUST_LOG: "info"
+
+jobs:
+  windows-release:
+    name: Windows executable
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.build_windows }}
+    runs-on: windows-2022
+    timeout-minutes: 180
+    env:
+      VCPKG_ROOT: "C:\\vcpkg"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install LLVM
+        uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: ${{ env.LLVM_VERSION }}
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: cargo-${{ runner.os }}-
+
+      - name: Cache vcpkg downloads and installed packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\vcpkg\downloads
+            C:\vcpkg\installed
+            C:\Users\runneradmin\AppData\Local\vcpkg\archives
+          key: vcpkg-windows-${{ env.VCPKG_COMMIT_ID }}-${{ hashFiles('vcpkg.json') }}
+          restore-keys: vcpkg-windows-${{ env.VCPKG_COMMIT_ID }}-
+
+      - name: Install Flutter Rust Bridge codegen
+        shell: pwsh
+        run: cargo install flutter_rust_bridge_codegen --version $env:FRB_CODEGEN_VERSION
+
+      - name: Flutter pub get
+        shell: pwsh
+        working-directory: flutter
+        run: |
+          flutter config --enable-windows-desktop
+          flutter pub get
+
+      - name: Install vcpkg libraries
+        shell: pwsh
+        run: |
+          if (!(Test-Path $env:VCPKG_ROOT)) {
+            git clone https://github.com/microsoft/vcpkg $env:VCPKG_ROOT
+          }
+          Push-Location $env:VCPKG_ROOT
+          git fetch --depth=1 origin $env:VCPKG_COMMIT_ID
+          git checkout $env:VCPKG_COMMIT_ID
+          .\bootstrap-vcpkg.bat -disableMetrics
+          .\vcpkg.exe install `
+            libvpx:x64-windows-static `
+            libyuv:x64-windows-static `
+            opus:x64-windows-static `
+            aom:x64-windows-static
+          Pop-Location
+
+      - name: Generate Flutter Rust Bridge files
+        shell: pwsh
+        run: |
+          $env:LIBCLANG_PATH = Join-Path $env:LLVM_PATH "bin"
+          flutter_rust_bridge_codegen `
+            --rust-input .\src\flutter_ffi.rs `
+            --dart-output .\flutter\lib\generated_bridge.dart `
+            --class-name Rustdesk
+
+      - name: Build Windows release
+        shell: pwsh
+        run: |
+          $env:LIBCLANG_PATH = Join-Path $env:LLVM_PATH "bin"
+          python build.py --flutter --skip-portable-pack
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stardesk-windows-x64
+          path: flutter/build/windows/x64/runner/Release/**
+          if-no-files-found: error
+
+  web-release:
+    name: Flutter web
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.build_web }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install LLVM
+        uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: ${{ env.LLVM_VERSION }}
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: cargo-web-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: cargo-web-${{ runner.os }}-
+
+      - name: Install Flutter Rust Bridge codegen
+        run: cargo install flutter_rust_bridge_codegen --version $FRB_CODEGEN_VERSION
+
+      - name: Flutter pub get
+        working-directory: flutter
+        run: |
+          flutter config --enable-web
+          flutter pub get
+
+      - name: Generate Flutter Rust Bridge files
+        run: |
+          export LIBCLANG_PATH="$LLVM_PATH/bin"
+          flutter_rust_bridge_codegen \
+            --rust-input ./src/flutter_ffi.rs \
+            --dart-output ./flutter/lib/generated_bridge.dart \
+            --class-name Rustdesk
+
+      - name: Build web
+        working-directory: flutter
+        run: |
+          flutter build web --release
+
+      - name: Upload web artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stardesk-web
+          path: flutter/build/web/**
+          if-no-files-found: error
+
+  server-image:
+    name: Server Docker image
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.push_server_image }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set image name
+        shell: bash
+        run: |
+          echo "SERVER_IMAGE=ghcr.io/matheus-matta/stardesk-server" >> "$GITHUB_ENV"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.SERVER_IMAGE }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,prefix=sha-
+
+      - name: Build and push server image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.server
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
