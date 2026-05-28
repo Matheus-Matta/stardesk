@@ -92,6 +92,8 @@ jobs:
         shell: pwsh
         working-directory: flutter
         run: |
+          flutter --version
+          dart --version
           flutter config --enable-windows-desktop
           flutter pub get
 
@@ -175,6 +177,8 @@ jobs:
       - name: Flutter pub get
         working-directory: flutter
         run: |
+          flutter --version
+          dart --version
           flutter config --enable-web
           flutter pub get
 
