@@ -1,0 +1,9 @@
+FROM nginx:1.27-alpine
+
+LABEL org.opencontainers.image.title="Stardesk Web"
+LABEL org.opencontainers.image.description="Stardesk Flutter web build served by nginx"
+LABEL org.opencontainers.image.source="https://github.com/Matheus-Matta/stardesk"
+
+COPY flutter/build/web /usr/share/nginx/html
+
+EXPOSE 80

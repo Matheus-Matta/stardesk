@@ -1,4 +1,4 @@
-name: Stardesk build
+name: Stardesk build artifacts
 
 on:
   workflow_dispatch:
@@ -8,8 +8,8 @@ on:
         required: true
         type: boolean
         default: true
-      build_web:
-        description: Build Flutter web artifact
+      push_web_image:
+        description: Build and push Flutter web Docker image to GHCR
         required: true
         type: boolean
         default: true
@@ -33,6 +33,8 @@ env:
   VCPKG_COMMIT_ID: "120deac3062162151622ca4860575a33844ba10b"
   VCPKG_DEFAULT_TRIPLET: "x64-windows-static"
   RUST_LOG: "info"
+  WEB_IMAGE: ghcr.io/matheus-matta/stardesk-web
+  SERVER_IMAGE: ghcr.io/matheus-matta/stardesk-server
 
 jobs:
   windows-release:
@@ -132,9 +134,9 @@ jobs:
           path: flutter/build/windows/x64/runner/Release/**
           if-no-files-found: error
 
-  web-release:
-    name: Flutter web
-    if: ${{ github.event_name != 'workflow_dispatch' || inputs.build_web }}
+  web-image:
+    name: Web Docker image
+    if: ${{ github.event_name != 'workflow_dispatch' || inputs.push_web_image }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -189,12 +191,32 @@ jobs:
         run: |
           flutter build web --release
 
-      - name: Upload web artifact
-        uses: actions/upload-artifact@v4
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
-          name: stardesk-web
-          path: flutter/build/web/**
-          if-no-files-found: error
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.WEB_IMAGE }}
+          tags: |
+            type=raw,value=latest
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,prefix=sha-
+
+      - name: Build and push web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.web
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
   server-image:
     name: Server Docker image
@@ -204,11 +226,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set image name
-        shell: bash
-        run: |
-          echo "SERVER_IMAGE=ghcr.io/matheus-matta/stardesk-server" >> "$GITHUB_ENV"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -223,7 +240,7 @@ jobs:
         with:
           images: ${{ env.SERVER_IMAGE }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest
             type=ref,event=branch
             type=ref,event=tag
             type=sha,prefix=sha-

@@ -7,6 +7,9 @@ target
 build
 flutter/.dart_tool
 flutter/build
+!flutter/build/
+!flutter/build/web/
+!flutter/build/web/**
 flutter/linux/build
 flutter/windows/flutter/ephemeral
 flutter/macos/Flutter/ephemeral
